@@ -340,6 +340,7 @@ class RTCPeerConnection(AsyncIOEventEmitter):
 
         # don't add track twice
         self.__assertTrackHasNoSender(track)
+        print(self.__transceivers)
 
         for transceiver in self.__transceivers:
             if transceiver.kind == track.kind:
@@ -353,28 +354,28 @@ class RTCPeerConnection(AsyncIOEventEmitter):
         transceiver = self.__createTransceiver(
             direction="sendrecv", kind=track.kind, sender_track=track
         )
+        print("jjj", self.__transceivers)
         return transceiver.sender
     
-    def removeTrack(self, track):
+    async def removeTrack(self, track):
         """
         Finds and removes :class:`MediaStreamTrack` from the set of media
         tracks.
         """
         # check state is valid
         self.__assertNotClosed()
-    
+        print(self.__transceivers, track)
         transceiver_to_remove = None
         for transceiver in self.__transceivers:
             if transceiver.sender.track == track:
                 transceiver_to_remove = transceiver
     
-        if transceiver is None:
+        if transceiver_to_remove is None:
             raise InternalError('Could not find track to remove.')
     
-        transceiver_to_remove.stop()
+        await transceiver_to_remove.stop()
         self.__transceivers.remove(transceiver_to_remove)
-        
-
+        print(self.__transceivers)
     def addTransceiver(self, trackOrKind, direction="sendrecv"):
         """
         Add a new :class:`RTCRtpTransceiver`.
@@ -654,7 +655,7 @@ class RTCPeerConnection(AsyncIOEventEmitter):
         description = sdp.SessionDescription.parse(sessionDescription.sdp)
         description.type = sessionDescription.type
         self.__validate_description(description, is_local=True)
-
+        print("local desc: ", sessionDescription)
         # update signaling state
         if description.type == "offer":
             self.__setSignalingState("have-local-offer")
