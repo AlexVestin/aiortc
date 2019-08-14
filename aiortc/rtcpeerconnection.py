@@ -561,6 +561,8 @@ class RTCPeerConnection(AsyncIOEventEmitter):
             remote_m = get_media_section(remote_media, i)
             media_kind = local_m.kind if local_m else remote_m.kind
             mid = local_m.rtp.muxId if local_m else remote_m.rtp.muxId
+            print(mid)
+            print(self.__transceivers[0].mid)
             if media_kind in ["audio", "video"]:
                 transceiver = self.__getTransceiverByMid(mid)
                 transceiver._set_mline_index(i)
