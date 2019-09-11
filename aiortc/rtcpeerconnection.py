@@ -241,7 +241,7 @@ class RTCPeerConnection(AsyncIOEventEmitter):
     :param: configuration: An optional :class:`RTCConfiguration`.
     """
 
-    def __init__(self, configuration=None):
+    def __init__(self, configuration=None, copy = False):
         super().__init__()
         self.__certificates = [RTCCertificate.generateCertificate()]
         self.__cname = "{%s}" % uuid.uuid4()
@@ -268,6 +268,10 @@ class RTCPeerConnection(AsyncIOEventEmitter):
         self.__currentRemoteDescription = None  # type: sdp.SessionDescription
         self.__pendingLocalDescription = None  # type: sdp.SessionDescription
         self.__pendingRemoteDescription = None  # type: sdp.SessionDescription
+
+        self._copy = copy
+
+        print(copy, self._copy)
 
     @property
     def iceConnectionState(self):
@@ -340,7 +344,6 @@ class RTCPeerConnection(AsyncIOEventEmitter):
 
         # don't add track twice
         self.__assertTrackHasNoSender(track)
-        print(self.__transceivers)
 
         for transceiver in self.__transceivers:
             if transceiver.kind == track.kind:
@@ -354,7 +357,7 @@ class RTCPeerConnection(AsyncIOEventEmitter):
         transceiver = self.__createTransceiver(
             direction="sendrecv", kind=track.kind, sender_track=track
         )
-        print("jjj", self.__transceivers)
+
         return transceiver.sender
     
     async def removeTrack(self, track):
@@ -364,7 +367,6 @@ class RTCPeerConnection(AsyncIOEventEmitter):
         """
         # check state is valid
         self.__assertNotClosed()
-        print(self.__transceivers, track)
         transceiver_to_remove = None
         for transceiver in self.__transceivers:
             if transceiver.sender.track == track:
@@ -375,7 +377,6 @@ class RTCPeerConnection(AsyncIOEventEmitter):
     
         await transceiver_to_remove.stop()
         self.__transceivers.remove(transceiver_to_remove)
-        print(self.__transceivers)
     def addTransceiver(self, trackOrKind, direction="sendrecv"):
         """
         Add a new :class:`RTCRtpTransceiver`.
@@ -561,8 +562,6 @@ class RTCPeerConnection(AsyncIOEventEmitter):
             remote_m = get_media_section(remote_media, i)
             media_kind = local_m.kind if local_m else remote_m.kind
             mid = local_m.rtp.muxId if local_m else remote_m.rtp.muxId
-            print(mid)
-            print(self.__transceivers[0].mid)
             if media_kind in ["audio", "video"]:
                 transceiver = self.__getTransceiverByMid(mid)
                 transceiver._set_mline_index(i)
@@ -657,7 +656,6 @@ class RTCPeerConnection(AsyncIOEventEmitter):
         description = sdp.SessionDescription.parse(sessionDescription.sdp)
         description.type = sessionDescription.type
         self.__validate_description(description, is_local=True)
-        print("local desc: ", sessionDescription)
         # update signaling state
         if description.type == "offer":
             self.__setSignalingState("have-local-offer")
@@ -715,6 +713,7 @@ class RTCPeerConnection(AsyncIOEventEmitter):
         description = sdp.SessionDescription.parse(sessionDescription.sdp)
         description.type = sessionDescription.type
         self.__validate_description(description, is_local=False)
+
 
         # apply description
         trackEvents = []
@@ -921,10 +920,11 @@ class RTCPeerConnection(AsyncIOEventEmitter):
 
     def __createTransceiver(self, direction, kind, sender_track=None):
         dtlsTransport = self.__createDtlsTransport()
+        print("slef._copy", self._copy)
         transceiver = RTCRtpTransceiver(
             direction=direction,
             kind=kind,
-            sender=RTCRtpSender(sender_track or kind, dtlsTransport),
+            sender=RTCRtpSender(sender_track or kind, dtlsTransport, self._copy),
             receiver=RTCRtpReceiver(kind, dtlsTransport),
         )
         transceiver.receiver._set_rtcp_ssrc(transceiver.sender._ssrc)

@@ -140,12 +140,8 @@ def get_decoder(codec):
 
     #if mimeType == "audio/opus":
     #   return OpusDecoder()
-    if mimeType == "audio/pcma":
-        return PcmaDecoder()
-    elif mimeType == "audio/pcmu":
-        return PcmuDecoder()
-    elif mimeType == "video/h264":
-        return H264Decoder()
+
+    return H264Decoder()
     #elif mimeType == "video/vp8":
     #    return Vp8Decoder()
 
@@ -156,9 +152,10 @@ def get_encoder(codec, copy_encoding = False):
     #if mimeType == "audio/opus":
     #    return OpusEncoder()
 
+    print(codec, copy_encoding)
+
     if copy_encoding:
         return H264CopyEncoder()
-
     if mimeType == "audio/pcma":
         return PcmaEncoder()
     elif mimeType == "audio/pcmu":

@@ -46,6 +46,7 @@ def decoder_worker(loop, input_q, output_q):
 
     while True:
         task = input_q.get()
+
         if task is None:
             # inform the track that is has ended
             asyncio.run_coroutine_threadsafe(output_q.put(None), loop)

@@ -49,7 +49,7 @@ class RTCRtpSender:
     :param: transport: An :class:`RTCDtlsTransport`.
     """
 
-    def __init__(self, trackOrKind, transport):
+    def __init__(self, trackOrKind, transport, copy):
         if transport.state == "closed":
             raise InvalidStateError
 
@@ -59,6 +59,8 @@ class RTCRtpSender:
         else:
             self.__kind = trackOrKind
             self.replaceTrack(None)
+
+        self._copy = copy
         self.__cname = None
         self._ssrc = random32()
         self._rtx_ssrc = random32()
@@ -161,6 +163,7 @@ class RTCRtpSender:
 
         :param: parameters: The :class:`RTCRtpParameters` for the sender.
         """
+
         if not self.__started:
             self.__cname = parameters.rtcp.cname
             self.__mid = parameters.muxId
@@ -245,7 +248,7 @@ class RTCRtpSender:
 
         # encode frame
         if self.__encoder is None:
-            self.__encoder = get_encoder(codec, True)
+            self.__encoder = get_encoder(codec, self._copy)
         
         return await self.__loop.run_in_executor(
             None, self.__encoder.encode, frame, self.__force_keyframe
@@ -287,11 +290,8 @@ class RTCRtpSender:
                 if not self.__track:
                     await asyncio.sleep(0.02)
                     continue
-                
                 payloads, timestamp = await self._next_encoded_frame(codec)
                 timestamp = uint32_add(timestamp_origin, timestamp)
-
-                
                 for i, payload in enumerate(payloads):
                     packet = RtpPacket(
                         payload_type=codec.payloadType,

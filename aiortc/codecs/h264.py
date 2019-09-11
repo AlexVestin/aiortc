@@ -10,7 +10,7 @@ from ..mediastreams import VIDEO_TIME_BASE, convert_timebase
 
 logger = logging.getLogger("codec.h264")
 
-MAX_FRAME_RATE = 20
+MAX_FRAME_RATE = 30
 PACKET_MAX = 1300
 
 NAL_TYPE_FU_A = 28
@@ -93,7 +93,6 @@ class H264PayloadDescriptor:
 class H264Decoder:
     def __init__(self):
         pass
-    """
     def __init__(self):
         self.codec = av.CodecContext.create("h264", "r")
 
@@ -108,7 +107,6 @@ class H264Decoder:
             return []
 
         return frames
-    """
 
 class H264Encoder:
     def __init__(self):
@@ -295,7 +293,11 @@ class H264CopyEncoder(H264Encoder):
             yield from self._split_bitstream(buf)
 
     def encode(self, packet, force_keyframe=False):
+        print("in")
         timestamp = convert_timebase(packet.pts, self.time_base, VIDEO_TIME_BASE)
+        print("timestamped")
         split_packages = self._split_stream(packet.to_bytes())
+        print("split")
         packets_to_send = self._packetize(split_packages)
+        print(timestamp)
         return packets_to_send, timestamp
