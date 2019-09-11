@@ -114,7 +114,6 @@ class H264Encoder:
 
     @staticmethod
     def _packetize_fu_a(data):
-        t0 = time.time()
         available_size = PACKET_MAX - FU_A_HEADER_SIZE
         payload_size = len(data) - NAL_HEADER_SIZE
         num_packets = math.ceil(payload_size / available_size)
@@ -148,9 +147,8 @@ class H264Encoder:
             packages.append(fu_header + payload)
 
             fu_header = fu_header_middle
-        # assert offset == len(data), "incorrect fragment data"
+        assert offset == len(data), "incorrect fragment data"
 
-        # print("1.", time.time() - t0)
         return packages
 
     @staticmethod
@@ -160,7 +158,6 @@ class H264Encoder:
 
         stap_header = NAL_TYPE_STAP_A | (data[0] & 0xE0)
 
-        t0 = time.time()
         payload = bytes()
         try:
             nalu = data  # with header
@@ -181,27 +178,24 @@ class H264Encoder:
         except StopIteration:
             nalu = None
 
-        # print("2.", time.time() - t0)
         if counter <= 1:
             return data, nalu
         else:
             return bytes([stap_header]) + payload, nalu
 
-    @staticmethod
+
+     @staticmethod
     def _split_bitstream(buf):
         # TODO: write in a more pytonic way,
         # translate from: https://github.com/aizvorski/h264bitstream/blob/master/h264_nal.c#L134
-        i = 0 
+        i = 0
         while True:
-            nal_type = (buf[i+3] % 0x1f) if buf[i+2] == 1 else (buf[i+4] & 0x1f)
             while (buf[i] != 0 or buf[i + 1] != 0 or buf[i + 2] != 0x01) and (
                 buf[i] != 0 or buf[i + 1] != 0 or buf[i + 2] != 0 or buf[i + 3] != 0x01
             ):
                 i += 1  # skip leading zero
                 if i + 4 >= len(buf):
-                    # Did not find nal start
-                    print("Did not find nal start")
-                    return -1
+                    return
             if buf[i] != 0 or buf[i + 1] != 0 or buf[i + 2] != 0x01:
                 i += 1
             i += 3
@@ -215,10 +209,8 @@ class H264Encoder:
                 if i + 3 >= len(buf):
                     nal_end = len(buf)
                     yield buf[nal_start:nal_end]
-                    print("yield1", nal_start, nal_end, len(buf))
                     return  # did not find nal end, stream ended first
             nal_end = i
-            print("yield2", nal_start, nal_end, len(buf))
             yield buf[nal_start:nal_end]
 
     @classmethod
