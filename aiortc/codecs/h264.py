@@ -258,9 +258,13 @@ class H264Encoder:
             self.codec.pix_fmt = "yuv420p"
             self.codec.time_base = fractions.Fraction(1, MAX_FRAME_RATE)
             self.codec.options = {
-                "profile": "baseline",
-                "level": "31",
+                "profile": "high",
+                "level": "41",
                 "tune": "zerolatency",
+                "b": "2200k",
+                "minrate": "2200k",
+                "maxrate": "2200k",
+                "bufsize": "2200k"
             }
             
 
