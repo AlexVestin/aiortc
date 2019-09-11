@@ -193,6 +193,7 @@ class H264Encoder:
         # translate from: https://github.com/aizvorski/h264bitstream/blob/master/h264_nal.c#L134
         i = 0 
         while True:
+            nal_type = (buf[i+3] % 0x1f) if buf[i+2] == 1 else (buf[i+4] & 0x1f)
             while (buf[i] != 0 or buf[i + 1] != 0 or buf[i + 2] != 0x01) and (
                 buf[i] != 0 or buf[i + 1] != 0 or buf[i + 2] != 0 or buf[i + 3] != 0x01
             ):
@@ -214,8 +215,10 @@ class H264Encoder:
                 if i + 3 >= len(buf):
                     nal_end = len(buf)
                     yield buf[nal_start:nal_end]
+                    print("yield1", nal_start, nal_end, len(buf))
                     return  # did not find nal end, stream ended first
             nal_end = i
+            print("yield2", nal_start, nal_end, len(buf))
             yield buf[nal_start:nal_end]
 
     @classmethod
@@ -287,21 +290,28 @@ class H264CopyEncoder(H264Encoder):
         self.frame_index = 0
         self.time_base = fractions.Fraction(1, MAX_FRAME_RATE)
         self.avg_time = time.time()
+        #self.file = open("ehhh.h264", "wb")
+        self.index = 0
 
     def _split_stream(self, buf):
         nal_type = (buf[3] % 0x1f) if buf[2] == 1 else (buf[4] & 0x1f)
         # IDR frame or Non-IDR frame
+        if nal_type == 5:
+            print(nal_type, buf[0:12], len(buf))
         if nal_type == 1 or nal_type == 5:
             yield buf[4:len(buf)]
         else:
             yield from self._split_bitstream(buf)
-
+        """ 
+        self.file.write(buf)
+        self.index += 1
+        if self.index == 600:
+            self.file.close()
+            print("close file")
+        """
     def encode(self, packet, force_keyframe=False):
-        print("in")
         timestamp = convert_timebase(packet.pts, self.time_base, VIDEO_TIME_BASE)
-        print("timestamped")
         split_packages = self._split_stream(packet.to_bytes())
-        print("split")
         packets_to_send = self._packetize(split_packages)
-        print(timestamp)
+        print(len(packets_to_send))
         return packets_to_send, timestamp
