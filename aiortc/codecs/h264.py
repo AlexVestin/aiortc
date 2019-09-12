@@ -184,7 +184,7 @@ class H264Encoder:
             return bytes([stap_header]) + payload, nalu
 
 
-     @staticmethod
+    @staticmethod
     def _split_bitstream(buf):
         # TODO: write in a more pytonic way,
         # translate from: https://github.com/aizvorski/h264bitstream/blob/master/h264_nal.c#L134
@@ -282,8 +282,6 @@ class H264CopyEncoder(H264Encoder):
         self.frame_index = 0
         self.time_base = fractions.Fraction(1, MAX_FRAME_RATE)
         self.avg_time = time.time()
-        #self.file = open("ehhh.h264", "wb")
-        self.index = 0
 
     def _split_stream(self, buf):
         nal_type = (buf[3] % 0x1f) if buf[2] == 1 else (buf[4] & 0x1f)
@@ -294,16 +292,8 @@ class H264CopyEncoder(H264Encoder):
             yield buf[4:len(buf)]
         else:
             yield from self._split_bitstream(buf)
-        """ 
-        self.file.write(buf)
-        self.index += 1
-        if self.index == 600:
-            self.file.close()
-            print("close file")
-        """
     def encode(self, packet, force_keyframe=False):
         timestamp = convert_timebase(packet.pts, self.time_base, VIDEO_TIME_BASE)
         split_packages = self._split_stream(packet.to_bytes())
         packets_to_send = self._packetize(split_packages)
-        print(len(packets_to_send))
         return packets_to_send, timestamp

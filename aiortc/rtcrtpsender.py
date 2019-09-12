@@ -301,7 +301,6 @@ class RTCRtpSender:
                     packet.ssrc = self._ssrc
                     packet.payload = payload
                     packet.marker = (i == len(payloads) - 1) and 1 or 0
-
                     # set header extensions
                     packet.extensions.abs_send_time = (
                         clock.current_ntp_time() >> 14
