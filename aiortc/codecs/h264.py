@@ -5,12 +5,13 @@ from itertools import tee
 from struct import pack, unpack_from
 import time
 import av
-
+import os
 from ..mediastreams import VIDEO_TIME_BASE, convert_timebase
 
 logger = logging.getLogger("codec.h264")
 
-MAX_FRAME_RATE = 30
+MAX_FRAME_RATE = int(os.getenv("VIDEO_FPS"))
+print(MAX_FRAME_RATE)
 PACKET_MAX = 1300
 
 NAL_TYPE_FU_A = 28
