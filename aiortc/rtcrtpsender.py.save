@@ -3,6 +3,7 @@ import logging
 import random
 import time
 import uuid
+from scapy.all import RTP
 
 from . import clock, rtp
 from .codecs import get_capabilities, get_encoder, is_rtx
@@ -281,7 +282,7 @@ class RTCRtpSender:
 
         sequence_number = random16()
         timestamp_origin = random32()
-
+        rtp_file = open("vid.rtp
         try:
             while True:
                 if not self.__track:
@@ -290,7 +291,6 @@ class RTCRtpSender:
                 
                 payloads, timestamp = await self._next_encoded_frame(codec)
                 timestamp = uint32_add(timestamp_origin, timestamp)
-
                 for i, payload in enumerate(payloads):
                     packet = RtpPacket(
                         payload_type=codec.payloadType,

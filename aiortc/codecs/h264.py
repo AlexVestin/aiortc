@@ -10,7 +10,7 @@ from ..mediastreams import VIDEO_TIME_BASE, convert_timebase
 
 logger = logging.getLogger("codec.h264")
 
-MAX_FRAME_RATE = 20
+MAX_FRAME_RATE = 30
 PACKET_MAX = 1300
 
 NAL_TYPE_FU_A = 28
@@ -194,6 +194,7 @@ class H264Encoder:
         # TODO: write in a more pytonic way,
         # translate from: https://github.com/aizvorski/h264bitstream/blob/master/h264_nal.c#L134
         i = 0 
+        t0 = time.time()
         while True:
             while (buf[i] != 0 or buf[i + 1] != 0 or buf[i + 2] != 0x01) and (
                 buf[i] != 0 or buf[i + 1] != 0 or buf[i + 2] != 0 or buf[i + 3] != 0x01
@@ -216,6 +217,7 @@ class H264Encoder:
                 if i + 3 >= len(buf):
                     nal_end = len(buf)
                     yield buf[nal_start:nal_end]
+                    print(len(buf), time.time() - t0)
                     return  # did not find nal end, stream ended first
             nal_end = i
             yield buf[nal_start:nal_end]
@@ -288,9 +290,13 @@ class H264CopyEncoder(H264Encoder):
 
     def _split_stream(self, buf):
         nal_type = (buf[3] % 0x1f) if buf[2] == 1 else (buf[4] & 0x1f)
+        t0 = time.time()
+
         # IDR frame or Non-IDR frame
         if nal_type == 1 or nal_type == 5:
             yield buf[4:len(buf)]
+        elif nal_type == 7:
+            yield from filter(None, buf.split(b'\x00\x00\x00\x01'))
         else:
             yield from self._split_bitstream(buf)
 
